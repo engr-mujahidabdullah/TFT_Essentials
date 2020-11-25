@@ -3,7 +3,8 @@
 
 /* Globals */
 
-lv_obj_t *main_label ;
+lv_obj_t *keyBoard ;
+lv_obj_t *textBox ;
 /*----------------------------------*/
 void setup() 
 {
@@ -12,10 +13,9 @@ void setup()
   TFT_Init(1);
   disp_Init();
   TFT_Input();
-  //vTaskDelay(500);
-  //Create_label(main_label, "Air Sampler");
-  //vTaskDelay(5000);
-  lvgl_keyboard();
+
+  get_textBox(textBox);
+
 }
 
 void loop() 

@@ -4,6 +4,9 @@
 lv_disp_buf_t disp_buf;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
 
+/* Globals */
+lv_obj_t * keyB;
+
 /* TFT instance */
 TFT_eSPI tft = TFT_eSPI(); 
 
@@ -78,25 +81,27 @@ void Create_label(lv_obj_t *label, const char* text)
 }
 
 /* Keypad */
-void lvgl_keyboard(void)
+void get_keyPad( lv_obj_t *ta)
 {
     /*Create a keyboard and apply the styles*/
-    lv_obj_t *kb = lv_keyboard_create(lv_scr_act(), NULL);
-    lv_obj_set_size(kb,  250, 140);
-    lv_keyboard_set_mode(kb, LV_KEYBOARD_MODE_NUM);
-    lv_obj_align(kb, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+    keyB = lv_keyboard_create(lv_scr_act(), NULL);
+    lv_obj_set_size(keyB,  250, 140);
+    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
+    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+     lv_keyboard_set_textarea(keyB, ta);
+}
 
-    /*Create a text area. The keyboard will write here*/
-    lv_obj_t *ta = lv_textarea_create(lv_scr_act(), NULL);
+void get_textBox(lv_obj_t *ta)
+{
+    ta = lv_textarea_create(lv_scr_act(), NULL);
+    lv_textarea_set_one_line(ta, true);
     lv_obj_align(ta, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
     lv_textarea_set_text(ta, "");
     lv_obj_set_size(ta, 240, 70);
-    //lv_coord_t max_h = LV_VER_RES / 2 - LV_DPI / 8;
-    //if(lv_obj_get_height(ta) > max_h) lv_obj_set_height(ta, max_h);
-
-    /*Assign the text area to the keyboard*/
-    lv_keyboard_set_textarea(kb, ta);
+    lv_obj_set_event_cb(ta, ta_event_cb);
+    
 }
+
 
 #if USE_LV_LOG != 0
 /* Serial debugging */
@@ -147,4 +152,13 @@ bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
     }
 
     return false; /*Return `false` because we are not buffering and no more data to read*/
+}
+
+static void ta_event_cb(lv_obj_t * ta, lv_event_t event)
+{
+    if(event == LV_EVENT_CLICKED )
+    {
+        //if(keyB == NULL) 
+        get_keyPad(ta);
+    }
 }
