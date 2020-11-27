@@ -26,8 +26,6 @@ void TFT_Init(int rotation);
 
 void touch_calibrate();
 
-void Create_label(lv_obj_t *label, const char* text);
-
 void lvgl_keyboard(lv_obj_t * kb, lv_obj_t * ta);
 
 void my_print(lv_log_level_t level, const char * file, uint32_t line, const char * dsc);
@@ -35,8 +33,15 @@ void my_print(lv_log_level_t level, const char * file, uint32_t line, const char
 bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data);
 
 static void ta_event_cb(lv_obj_t * ta, lv_event_t event);
+static void Get_TaData(lv_obj_t * ta, lv_event_t event);
 
-void get_keyPad(lv_obj_t *ta);
-void get_textBox(lv_obj_t *ta);
+void Create_label(lv_obj_t *label, const char* text, lv_obj_t *scr);
+
+void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr);
+
+void get_keyPad_active( lv_obj_t *ta);
+
+void get_textBox(lv_obj_t *ta, lv_obj_t *scr);
+
 
 #endif

@@ -1,8 +1,10 @@
 #include "TFTessentials.h"
+#include <FS.h>
 
 /* Defined Globals */
 lv_disp_buf_t disp_buf;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
+const char * _data_ ;
 
 /* Globals */
 lv_obj_t * keyB;
@@ -73,29 +75,43 @@ void TFT_Input(void)
 }
 
 /* LABEL */
-void Create_label(lv_obj_t *label, const char* text)
+void Create_label(lv_obj_t *label, const char* text, lv_obj_t *scr)
 {
-    label = lv_label_create(lv_scr_act(), NULL);
+    label = lv_label_create(scr, NULL);
     lv_label_set_text(label, text);
     lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
 }
 
 /* Keypad */
-void get_keyPad( lv_obj_t *ta)
+void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr)
+{
+    /*Create a keyboard and apply the styles*/
+    keyB = lv_keyboard_create(scr, NULL);
+    lv_obj_set_size(keyB,  250, 140);
+    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
+   // lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+     lv_keyboard_set_textarea(keyB, ta);
+     lv_obj_set_event_cb(ta, Get_TaData);
+}
+
+void get_keyPad_active( lv_obj_t *ta)
 {
     /*Create a keyboard and apply the styles*/
     keyB = lv_keyboard_create(lv_scr_act(), NULL);
     lv_obj_set_size(keyB,  250, 140);
     lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
-    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-     lv_keyboard_set_textarea(keyB, ta);
+    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
+    lv_keyboard_set_textarea(keyB, ta);
+    lv_obj_set_event_cb(ta, Get_TaData);
 }
 
-void get_textBox(lv_obj_t *ta)
+void get_textBox(lv_obj_t *ta, lv_obj_t *scr)
 {
-    ta = lv_textarea_create(lv_scr_act(), NULL);
+    ta = lv_textarea_create(scr, NULL);
     lv_textarea_set_one_line(ta, true);
-    lv_obj_align(ta, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
+    lv_textarea_set_max_length(ta, 12);
+    lv_textarea_set_one_line(ta, true);
+    //lv_obj_align(ta, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
     lv_textarea_set_text(ta, "");
     lv_obj_set_size(ta, 240, 70);
     lv_obj_set_event_cb(ta, ta_event_cb);
@@ -132,11 +148,11 @@ bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
 
     if(touchX>screenWidth || touchY > screenHeight)
     {
-      Serial.println("Y or y outside of expected parameters..");
-      Serial.print("y:");
-      Serial.print(touchX);
-      Serial.print(" x:");
-      Serial.print(touchY);
+      //Serial.println("Y or y outside of expected parameters..");
+      //Serial.print("y:");
+      //Serial.print(touchX);
+      //Serial.print(" x:");
+      //Serial.print(touchY);
     }
     else
     {
@@ -144,11 +160,11 @@ bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
       data->point.x = touchX;
       data->point.y = touchY;
   
-      Serial.print("Data x");
-      Serial.println(touchX);
+      //Serial.print("Data x");
+      //Serial.println(touchX);
       
-      Serial.print("Data y");
-      Serial.println(touchY);
+      //Serial.print("Data y");
+      //Serial.println(touchY);
     }
 
     return false; /*Return `false` because we are not buffering and no more data to read*/
@@ -158,7 +174,13 @@ static void ta_event_cb(lv_obj_t * ta, lv_event_t event)
 {
     if(event == LV_EVENT_CLICKED )
     {
-        //if(keyB == NULL) 
-        get_keyPad(ta);
+        if(keyB == NULL)  get_keyPad_active(ta);
     }
+}
+
+static void Get_TaData(lv_obj_t * ta, lv_event_t event)
+{
+    if(event == LV_EVENT_APPLY)
+        _data_ = lv_textarea_get_text(ta);
+    Serial.print(_data_);
 }
