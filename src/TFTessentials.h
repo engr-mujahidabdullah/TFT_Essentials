@@ -32,8 +32,9 @@ void my_print(lv_log_level_t level, const char * file, uint32_t line, const char
 
 bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data);
 
-static void ta_event_cb(lv_obj_t * ta, lv_event_t event);
-static void Get_TaData(lv_obj_t * ta, lv_event_t event);
+void ta_event_cb(lv_obj_t * ta, lv_event_t event);
+
+void keyB_event_cb(lv_obj_t * keyB, lv_event_t event);
 
 void Create_label(lv_obj_t *label, const char* text, lv_obj_t *scr);
 
@@ -41,7 +42,12 @@ void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr);
 
 void get_keyPad_active( lv_obj_t *ta);
 
-void get_textBox(lv_obj_t *ta, lv_obj_t *scr);
+void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int x, int y);
 
+void Create_labelPos(lv_obj_t *label, const char* text, lv_obj_t *scr, int x, int y);
+
+const char* get_data(lv_obj_t* ta);
+
+void lv_ex_tabview_( lv_obj_t *scr);
 
 #endif
