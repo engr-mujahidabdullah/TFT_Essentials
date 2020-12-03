@@ -1,27 +1,44 @@
 #include "TFTessentials.h"
 #include <FS.h>
-
+#include <Arduino.h>
 /* Defined Globals */
 lv_disp_buf_t disp_buf;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
-const char * _data_ ;
-bool data_check = false;
+const char * dt_data_ ;
+const char * st_data_ ;
+const char * sv_data_ ;
 
+bool data_check = false;
+bool data_print = false;
 /* Globals */
-lv_obj_t * keyB;
-lv_obj_t *textBox0 ;
-lv_obj_t *textBox1 ;
-lv_obj_t *textBox2 ;
+
+static lv_obj_t * keyB;
+static lv_obj_t *sampling_t ;
+static lv_obj_t *delay_t ;
+static lv_obj_t *sampling_v ;
+
+
+static const char * btnm_map[] = {"Start", "Config", "About"};
+
 
 lv_obj_t *tabview;
 lv_obj_t *tab1 ;
 lv_obj_t *tab2 ;
 lv_obj_t *tab3 ;
-lv_obj_t *tab4 ;
+
+lv_obj_t *set_btn;
+lv_obj_t *set_lb;
+
 
 lv_obj_t *lb ;
 lv_obj_t *lb1 ;
 lv_obj_t *lb2 ;
+
+
+lv_obj_t *keyBoard ;
+
+
+bool key_B = false;
 /* TFT instance */
 TFT_eSPI tft = TFT_eSPI(); 
 
@@ -88,68 +105,6 @@ void TFT_Input(void)
     lv_indev_drv_register(&indev_drv);
 }
 
-/* LABEL */
-void Create_label(lv_obj_t *label, const char* text, lv_obj_t *scr)
-{
-    label = lv_label_create(scr, NULL);
-    lv_label_set_text(label, text);
-    lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
-}
-
-void Create_labelPos(lv_obj_t *label, const char* text, lv_obj_t *scr, int x, int y)
-{
-    label = lv_label_create(scr, NULL);
-    lv_label_set_text(label, text);
-    lv_obj_set_pos(label, x, y);
-}
-
-/* Keypad */
-void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr)
-{
-    /*Create a keyboard and apply the styles*/
-    keyB = lv_keyboard_create(scr, NULL);
-    lv_obj_set_size(keyB,  320, 120);
-    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
-   // lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
-     lv_keyboard_set_textarea(keyB, ta);
-     lv_keyboard_set_cursor_manage(keyB, true);
-   //  lv_obj_set_event_cb(keyB, keyB_event_cb);
-}
-
-void get_keyPad_active( lv_obj_t *ta)
-{
-    /*Create a keyboard and apply the styles*/
-    keyB = lv_keyboard_create(lv_scr_act(), NULL);
-    lv_obj_set_size(keyB,  320, 120);
-    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
-    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
-    lv_keyboard_set_textarea(keyB, ta);
-    lv_keyboard_set_cursor_manage(keyB, true);
-    lv_obj_set_event_cb(keyB, keyB_event_cb);
-}
-
-void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int x, int y)
-{
-    ta = lv_textarea_create(scr, NULL);
-    lv_textarea_set_cursor_hidden(ta, true);
-    lv_textarea_set_one_line(ta, true);
-    lv_textarea_set_max_length(ta, 12);
-    lv_textarea_set_text(ta, "");
-    lv_obj_set_size(ta, 315, 30);
-    lv_obj_set_event_cb(ta, ta_event_cb);
-    lv_obj_set_pos(ta, x, y);
-}
-
-
-#if USE_LV_LOG != 0
-/* Serial debugging */
-void my_print(lv_log_level_t level, const char * file, uint32_t line, const char * dsc)
-{
-
-    Serial.printf("%s@%d->%s\r\n", file, line, dsc);
-    Serial.flush();
-}
-#endif
 
 /*Read the touchpad*/
 bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
@@ -171,33 +126,95 @@ bool touchpad_read(lv_indev_drv_t * indev_driver, lv_indev_data_t * data)
       /*Set the coordinates*/
       data->point.x = touchX;
       data->point.y = touchY;
-  
-      //Serial.print("Data x");
-      //Serial.println(touchX);
-      
-      //Serial.print("Data y");
-      //Serial.println(touchY);
 
     return false; /*Return `false` because we are not buffering and no more data to read*/
 }
 
+
+/*----------------------------------------------------------*/
+
+/* LABEL */
+void Create_label(lv_obj_t *label, const char* text, lv_obj_t *scr)
+{
+    label = lv_label_create(scr, NULL);
+    lv_label_set_text(label, text);
+    lv_obj_align(label, NULL, LV_ALIGN_CENTER, 0, 0);
+}
+
+void Create_labelPos(lv_obj_t *label, const char* text, lv_obj_t *scr, int x, int y)
+{
+    label = lv_label_create(scr, NULL);
+    lv_obj_set_pos(label, x, y);
+    lv_label_set_text(label, text);
+
+}
+
+/* Keypad */
+void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr)
+{
+    /*Create a keyboard and apply the styles*/
+    keyB = lv_keyboard_create(scr, NULL);
+    lv_obj_set_size(keyB,  320, 120);
+    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
+   // lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+     lv_keyboard_set_textarea(keyB, ta);
+     lv_keyboard_set_cursor_manage(keyB, true);
+}
+
+void get_keyPad_active( lv_obj_t *ta)
+{
+    /*Create a keyboard and apply the styles*/
+    keyB = lv_keyboard_create(lv_scr_act(), NULL);
+    lv_obj_set_size(keyB,  320, 120);
+    lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
+    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_LEFT, 0, 0);
+    lv_keyboard_set_textarea(keyB, ta);
+    lv_keyboard_set_cursor_manage(keyB, true);
+    lv_obj_set_event_cb(keyB, keyB_event_cb);
+}
+
+
+/*Text Box*/
+void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int id, int x, int y)
+{
+    ta = lv_textarea_create(scr, NULL);
+    lv_textarea_set_cursor_hidden(ta, true);
+    lv_textarea_set_one_line(ta, true);
+    lv_textarea_set_max_length(ta, 12);
+    lv_obj_set_pos(ta, x, y);
+    lv_textarea_set_text(ta,"");
+    lv_textarea_set_placeholder_text(ta, "0000");
+    lv_obj_set_event_cb(ta, ta_event_cb); 
+    lv_obj_set_user_data(ta, id); 
+}
+
+/*Button*/
+void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title, int x, int y)
+{
+
+    btn = lv_btn_create(scr, NULL);
+    lv_obj_set_pos(btn, x, y);
+    lab = lv_label_create(btn, NULL);
+    lv_obj_set_event_cb(btn, event_handler);
+    lv_label_set_text(lab, title);
+}
+
+/*----------------------------------------------------------*/
+
+/* Text Box event handler*/
 void ta_event_cb(lv_obj_t * ta, lv_event_t event)
 {
-    if(event == LV_EVENT_CLICKED)
-    {
-        get_keyPad_active(ta);
-    }
     if(event == LV_EVENT_RELEASED) 
     {
-        if(keyB != NULL) {
+        if(key_B == false) 
+        {
             lv_obj_set_height(tabview, LV_VER_RES / 2);
+            get_keyPad_active(ta);
             lv_indev_wait_release(lv_indev_get_act());
-             get_keyPad_active(ta);
-
         }
-        lv_textarea_set_cursor_hidden(ta, false);
-        lv_page_focus(tab2, lv_textarea_get_label(ta), LV_ANIM_ON);
-        lv_keyboard_set_textarea(keyB, ta);
+            lv_textarea_set_cursor_hidden(ta, false);
+            lv_page_focus(tab2, lv_textarea_get_label(ta), LV_ANIM_ON);
+            lv_keyboard_set_textarea(keyB, ta);
     } 
     if(event == LV_EVENT_DEFOCUSED) 
     {
@@ -205,41 +222,72 @@ void ta_event_cb(lv_obj_t * ta, lv_event_t event)
     }
 }
 
+
+
+/*Button Handler*/
+void event_handler(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_CLICKED) 
+    {
+        data_check = true;   
+    }
+vTaskDelay(1);
+}
+
+
+/* Key_pad event handler*/
 void keyB_event_cb(lv_obj_t * keyB, lv_event_t event)
 {
     lv_keyboard_def_event_cb(keyB, event);
     if(event == LV_EVENT_APPLY)
     {
-       lv_obj_t *ta = lv_keyboard_get_textarea(keyB);
-       _data_ = lv_textarea_get_text(ta); data_check = true;
-        lv_obj_del(keyB);
+        get_data();
         lv_obj_set_height(tabview, LV_VER_RES);
-        keyB = NULL;
+        lv_obj_del(keyB);
+       keyB = NULL;
+       key_B = false;
     }
     if (event == LV_EVENT_CANCEL)
     {
-        lv_obj_del(keyB);
-        lv_obj_set_height(tabview, LV_VER_RES);
-        keyB = NULL;
+        if(keyB) 
+        {
+            void get_data();
+            lv_obj_set_height(tabview,  LV_VER_RES);
+            lv_obj_del(keyB);
+            keyB = NULL;
+            key_B = false;
+        }
     }
 }
+/*-------------------------------------*/
+/* OTHER FUNCTIONS */
 
+void get_data()
+{
+    lv_obj_t *t = lv_keyboard_get_textarea(keyB);
+    int x = lv_obj_get_user_data(t);
+    if(x = 1) sv_data_ = lv_textarea_get_text(t);
+    if(x = 2) dt_data_ = lv_textarea_get_text(t);
+}
+
+
+/*-------------------------------------*/
 void lv_ex_tabview_( lv_obj_t *scr)
 {
     /*Create a Tab view object*/
-    
     tabview = lv_tabview_create(scr, NULL);
+    
     /*Add 3 tabs (the tabs are page (lv_page) and can be scrolled*/
     tab1 = lv_tabview_add_tab(tabview, "Start");
     tab2 = lv_tabview_add_tab(tabview, "Config");
-    tab3 = lv_tabview_add_tab(tabview, "Setting");
-    tab4 = lv_tabview_add_tab(tabview, "About");
+    tab3 = lv_tabview_add_tab(tabview, "About");
 
-    /*Add content to the tabs*/
-    Create_labelPos(lb, "Sampling Time:", tab2, 0,0);
-    get_textBox(textBox0, tab2, 0, 20);
-    Create_labelPos(lb1, "Delay Time:", tab2, 0,60);
-    get_textBox(textBox1, tab2, 0, 80);
-    Create_labelPos(lb2, "Fan Speed", tab2, 0,110);
-    get_textBox(textBox2, tab2, 0, 130);
+
+    /*Add content to the tab2*/
+    Create_btn(set_btn, set_lb, tab2, "SET", 100, 135);
+    Create_labelPos(lb1, "Sampling Air Volume (L):", tab2, 0,10);
+    get_textBox(sampling_v, tab2, 1, 0, 35);
+    Create_labelPos(lb1, "Delay Time (sec): ", tab2, 0,70);
+    get_textBox(delay_t, tab2, 2, 0, 95);
+
 }

@@ -42,12 +42,28 @@ void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr);
 
 void get_keyPad_active( lv_obj_t *ta);
 
-void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int x, int y);
+void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int id, int x, int y);
 
 void Create_labelPos(lv_obj_t *label, const char* text, lv_obj_t *scr, int x, int y);
 
-const char* get_data(lv_obj_t* ta);
+void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title, int x, int y);
+
+void lv_ex_btnmatrix(lv_obj_t * btnmM, lv_obj_t *scr);
+
+void get_data();
 
 void lv_ex_tabview_( lv_obj_t *scr);
+
+void Create_slider(lv_obj_t *slider, lv_obj_t *lb, lv_obj_t *scr, int x, int y);
+
+void time_ta_event_cb(lv_obj_t * ta, lv_event_t event);
+
+void Time_textarea(lv_obj_t *ta, lv_obj_t *scr, int x, int y);
+
+void slider_event_cb(lv_obj_t * slider, lv_event_t event);
+
+void event_handler(lv_obj_t * obj, lv_event_t event);
+
+void mainDisplay(void);
 
 #endif
