@@ -4,27 +4,27 @@
 /* Defined Globals */
 lv_disp_buf_t disp_buf;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
-const char * dt_data_ ;
-const char * st_data_ ;
-const char * sv_data_ ;
+extern const char * dt_data_  ;
+extern const char * sv_data_  ;
+
+const char * disp_label_ = "0";
 
 bool data_check = false;
-bool data_print = false;
+bool start_process = false;
 /* Globals */
 
 static lv_obj_t * keyB;
-static lv_obj_t *sampling_t ;
 static lv_obj_t *delay_t ;
 static lv_obj_t *sampling_v ;
 
-
-static const char * btnm_map[] = {"Start", "Config", "About"};
-
+lv_obj_t * table;
 
 lv_obj_t *tabview;
 lv_obj_t *tab1 ;
 lv_obj_t *tab2 ;
 lv_obj_t *tab3 ;
+
+lv_obj_t *uni_lab;
 
 lv_obj_t *set_btn;
 lv_obj_t *set_lb;
@@ -156,7 +156,7 @@ void get_keyPad( lv_obj_t *ta,  lv_obj_t *scr)
     keyB = lv_keyboard_create(scr, NULL);
     lv_obj_set_size(keyB,  320, 120);
     lv_keyboard_set_mode(keyB, LV_KEYBOARD_MODE_NUM);
-   // lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
+    lv_obj_align(keyB, NULL, LV_ALIGN_IN_BOTTOM_MID, 0, 0);
      lv_keyboard_set_textarea(keyB, ta);
      lv_keyboard_set_cursor_manage(keyB, true);
 }
@@ -189,10 +189,11 @@ void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int id, int x, int y)
 }
 
 /*Button*/
-void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title, int x, int y)
+void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title,int id, int x, int y)
 {
 
     btn = lv_btn_create(scr, NULL);
+    lv_obj_set_user_data(btn, id);
     lv_obj_set_pos(btn, x, y);
     lab = lv_label_create(btn, NULL);
     lv_obj_set_event_cb(btn, event_handler);
@@ -200,6 +201,14 @@ void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title,
 }
 
 /*----------------------------------------------------------*/
+
+void lab_event(lv_obj_t *obj, lv_event_t event)
+{
+    if(event == LV_EVENT_REFRESH)
+    {
+        lv_label_set_text(uni_lab,disp_label_);
+    }
+}
 
 /* Text Box event handler*/
 void ta_event_cb(lv_obj_t * ta, lv_event_t event)
@@ -229,11 +238,45 @@ void event_handler(lv_obj_t * obj, lv_event_t event)
 {
     if(event == LV_EVENT_CLICKED) 
     {
-        data_check = true;   
+        int id = lv_obj_get_user_data(obj);
+        if(id == 0)
+            data_check = true;
+
+        if(id == 1)
+        {
+            lv_obj_move_background(tab1);
+            lv_ex_page_();
+            start_process = true;
+        }
+        if(id == 3)
+        {
+            lv_obj_t *parent = lv_obj_get_parent(obj);
+            lv_obj_move_foreground(tabview);
+            lv_obj_clean(parent);
+            lv_obj_del(parent);
+        }
+            
     }
 vTaskDelay(1);
 }
 
+void tab_handler(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED) 
+    {
+       lv_event_send(table, LV_EVENT_VALUE_CHANGED, NULL);
+    }
+    vTaskDelay(1);
+}
+
+void table_handler(lv_obj_t *obj, lv_event_t event)
+{
+    if(event == LV_EVENT_VALUE_CHANGED)
+        {
+            lv_table_set_cell_value(obj, 0, 1, sv_data_);
+            lv_table_set_cell_value(obj, 1, 1, dt_data_);
+        }
+}
 
 /* Key_pad event handler*/
 void keyB_event_cb(lv_obj_t * keyB, lv_event_t event)
@@ -241,7 +284,7 @@ void keyB_event_cb(lv_obj_t * keyB, lv_event_t event)
     lv_keyboard_def_event_cb(keyB, event);
     if(event == LV_EVENT_APPLY)
     {
-        get_data();
+        get_data(); 
         lv_obj_set_height(tabview, LV_VER_RES);
         lv_obj_del(keyB);
        keyB = NULL;
@@ -251,7 +294,7 @@ void keyB_event_cb(lv_obj_t * keyB, lv_event_t event)
     {
         if(keyB) 
         {
-            void get_data();
+            get_data(); 
             lv_obj_set_height(tabview,  LV_VER_RES);
             lv_obj_del(keyB);
             keyB = NULL;
@@ -266,8 +309,14 @@ void get_data()
 {
     lv_obj_t *t = lv_keyboard_get_textarea(keyB);
     int x = lv_obj_get_user_data(t);
-    if(x = 1) sv_data_ = lv_textarea_get_text(t);
-    if(x = 2) dt_data_ = lv_textarea_get_text(t);
+    if(x == 1) sv_data_ = lv_textarea_get_text(t);
+    if(x == 2) dt_data_ = lv_textarea_get_text(t);
+}
+
+void change_dispValue()
+{
+    lv_table_set_cell_value(table, 0, 1,(const char*) sv_data_);
+    lv_table_set_cell_value(table, 1, 1, dt_data_);
 }
 
 
@@ -276,18 +325,59 @@ void lv_ex_tabview_( lv_obj_t *scr)
 {
     /*Create a Tab view object*/
     tabview = lv_tabview_create(scr, NULL);
-    
+    lv_obj_set_event_cb(tabview, tab_handler);
+
     /*Add 3 tabs (the tabs are page (lv_page) and can be scrolled*/
     tab1 = lv_tabview_add_tab(tabview, "Start");
     tab2 = lv_tabview_add_tab(tabview, "Config");
     tab3 = lv_tabview_add_tab(tabview, "About");
 
+    /*Add content to the tab1*/
+    lv_ex_table(tab1);
+    Create_btn(set_btn, set_lb, tab1, "START", 1, 100, 255);
 
     /*Add content to the tab2*/
-    Create_btn(set_btn, set_lb, tab2, "SET", 100, 135);
+    Create_btn(set_btn, set_lb, tab2, "SET", 0, 100, 135);
     Create_labelPos(lb1, "Sampling Air Volume (L):", tab2, 0,10);
     get_textBox(sampling_v, tab2, 1, 0, 35);
     Create_labelPos(lb1, "Delay Time (sec): ", tab2, 0,70);
     get_textBox(delay_t, tab2, 2, 0, 95);
 
 }
+
+/* Table */
+void lv_ex_table( lv_obj_t * scr)
+{
+    table = lv_table_create(scr, NULL);
+    lv_table_set_col_cnt(table, 2);
+    lv_table_set_row_cnt(table, 2);
+    lv_obj_align(table, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(table, table_handler);
+    /*Fill the first column*/
+    lv_table_set_cell_value(table, 0, 0, "Sample Volume(L)");
+    lv_table_set_cell_value(table, 1, 0, "Delay Time(s)");
+    /*Fill the second column*/
+    
+    lv_table_set_cell_value(table, 0, 1, sv_data_);
+    lv_table_set_cell_value(table, 1, 1, dt_data_);
+}
+
+void lv_ex_page_(void)
+{
+    /*Create a page*/
+    lv_obj_t * page = lv_page_create(lv_scr_act(), NULL);
+    lv_obj_set_size(page,320, 240);
+    lv_obj_align(page, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    uni_lab = lv_label_create(page, NULL);
+    lv_label_set_text(uni_lab, dt_data_);
+    lv_obj_set_event_cb(uni_lab, lab_event);
+    lv_obj_align(uni_lab, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t *_btn_; lv_obj_t *lab_btn;
+    Create_btn(_btn_, lab_btn, page, "Stop/Close", 3, 80, 160);
+}
+
+
+
+

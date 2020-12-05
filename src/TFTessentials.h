@@ -4,7 +4,7 @@
 
 #include <TFT_eSPI.h>
 #include "lvgl.h"
-
+#include "save.h"
 
 
 #define CALIBRATION_FILE "/TouchCalData1"
@@ -46,11 +46,25 @@ void get_textBox(lv_obj_t *ta, lv_obj_t *scr, int id, int x, int y);
 
 void Create_labelPos(lv_obj_t *label, const char* text, lv_obj_t *scr, int x, int y);
 
-void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title, int x, int y);
+void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title,int id, int x, int y);
 
 void lv_ex_btnmatrix(lv_obj_t * btnmM, lv_obj_t *scr);
 
+void my_refr_func(void);
+
+void tab_handler(lv_obj_t * obj, lv_event_t event);
+
+void lab_event(lv_obj_t *obj, lv_event_t event);
+
+void table_handler(lv_obj_t *obj, lv_event_t event);
+
 void get_data();
+
+void lv_ex_page_(void);
+
+void Create_Bar(lv_obj_t *scr);
+
+void lv_ex_table( lv_obj_t * scr);
 
 void lv_ex_tabview_( lv_obj_t *scr);
 
