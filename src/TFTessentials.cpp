@@ -1,13 +1,20 @@
 #include "TFTessentials.h"
+
 #include <FS.h>
 #include <Arduino.h>
+
+
 /* Defined Globals */
 lv_disp_buf_t disp_buf;
 lv_color_t buf[LV_HOR_RES_MAX * 10];
 extern const char * dt_data_  ;
 extern const char * sv_data_  ;
 
+extern bool start_flag;
+extern float flow_sum ;
+
 const char * disp_label_ = "0";
+const char * flow_label_ = "0";
 
 bool data_check = false;
 bool start_process = false;
@@ -23,8 +30,10 @@ lv_obj_t *tabview;
 lv_obj_t *tab1 ;
 lv_obj_t *tab2 ;
 lv_obj_t *tab3 ;
+lv_obj_t * page;
 
 lv_obj_t *uni_lab;
+lv_obj_t *vol_lab;
 
 lv_obj_t *set_btn;
 lv_obj_t *set_lb;
@@ -34,9 +43,10 @@ lv_obj_t *lb ;
 lv_obj_t *lb1 ;
 lv_obj_t *lb2 ;
 
-
+lv_obj_t *_btn_; lv_obj_t *lab_btn;
 lv_obj_t *keyBoard ;
 
+lv_obj_t *msgB;
 
 bool key_B = false;
 /* TFT instance */
@@ -200,13 +210,46 @@ void Create_btn( lv_obj_t *btn, lv_obj_t *lab, lv_obj_t *scr, const char* title,
     lv_label_set_text(lab, title);
 }
 
+/* Msg Box */
+void lv_ex_msgbox(lv_obj_t *mbox, lv_obj_t *scr)
+{
+    static const char * btns[] ={"Close"};
+    mbox = lv_msgbox_create(scr, NULL);
+    lv_msgbox_set_text(mbox, "Done");
+    lv_msgbox_add_btns(mbox, btns);
+    lv_obj_set_width(mbox, 200);
+   // lv_obj_set_event_cb(mbox, msg_handler);
+    lv_obj_align(mbox, NULL, LV_ALIGN_CENTER, 0, 0); /*Align to the corner*/
+}
+
 /*----------------------------------------------------------*/
 
 void lab_event(lv_obj_t *obj, lv_event_t event)
 {
     if(event == LV_EVENT_REFRESH)
     {
-        lv_label_set_text(uni_lab,disp_label_);
+        if(start_flag == false)
+            lv_label_set_text_fmt(uni_lab,"Start in: %d sec", atoi(dt_data_));
+        if(start_flag == true)
+            lv_label_set_text(uni_lab,"");
+    }
+}
+
+void page_handler(lv_obj_t * obj, lv_event_t event)
+{
+    if(event == LV_EVENT_REFRESH)
+    {
+        //    lv_obj_move_foreground(tabview);
+            vTaskDelay(1000);
+           lv_close_page_();
+    }
+}
+
+void lab2_event(lv_obj_t *obj, lv_event_t event)
+{
+    if(event == LV_EVENT_REFRESH)
+    {
+        lv_label_set_text_fmt(obj,"%d L ", (int)flow_sum);
     }
 }
 
@@ -254,10 +297,9 @@ void event_handler(lv_obj_t * obj, lv_event_t event)
             lv_obj_move_foreground(tabview);
             lv_obj_clean(parent);
             lv_obj_del(parent);
-        }
-            
+        }   
     }
-vTaskDelay(1);
+ vTaskDelay(1);
 }
 
 void tab_handler(lv_obj_t * obj, lv_event_t event)
@@ -334,7 +376,7 @@ void lv_ex_tabview_( lv_obj_t *scr)
 
     /*Add content to the tab1*/
     lv_ex_table(tab1);
-    Create_btn(set_btn, set_lb, tab1, "START", 1, 100, 255);
+    Create_btn(set_btn, set_lb, tab1, "START", 1, 100, 130);
 
     /*Add content to the tab2*/
     Create_btn(set_btn, set_lb, tab2, "SET", 0, 100, 135);
@@ -351,8 +393,11 @@ void lv_ex_table( lv_obj_t * scr)
     table = lv_table_create(scr, NULL);
     lv_table_set_col_cnt(table, 2);
     lv_table_set_row_cnt(table, 2);
-    lv_obj_align(table, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(table, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
+    lv_table_set_col_width(table, 0, 180);lv_table_set_col_width(table, 1, 80);
+    lv_obj_set_state(table, LV_STATE_DISABLED);
     lv_obj_set_event_cb(table, table_handler);
+
     /*Fill the first column*/
     lv_table_set_cell_value(table, 0, 0, "Sample Volume(L)");
     lv_table_set_cell_value(table, 1, 0, "Delay Time(s)");
@@ -365,19 +410,47 @@ void lv_ex_table( lv_obj_t * scr)
 void lv_ex_page_(void)
 {
     /*Create a page*/
-    lv_obj_t * page = lv_page_create(lv_scr_act(), NULL);
+    page = lv_page_create(lv_scr_act(), NULL);
     lv_obj_set_size(page,320, 240);
     lv_obj_align(page, NULL, LV_ALIGN_CENTER, 0, 0);
 
     uni_lab = lv_label_create(page, NULL);
-    lv_label_set_text(uni_lab, dt_data_);
+    lv_label_set_text_fmt(uni_lab,"Start in: %d sec", 0);
     lv_obj_set_event_cb(uni_lab, lab_event);
-    lv_obj_align(uni_lab, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(uni_lab, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
 
-    lv_obj_t *_btn_; lv_obj_t *lab_btn;
-    Create_btn(_btn_, lab_btn, page, "Stop/Close", 3, 80, 160);
+    vol_lab = lv_label_create(page, NULL);
+
+    static lv_style_t st;
+    lv_style_init(&st);
+    lv_style_set_text_font(&st, LV_STATE_DEFAULT, &lv_font_montserrat_30);
+    lv_obj_set_state(page, LV_STATE_DISABLED);
+    lv_label_set_text_fmt(vol_lab,"", flow_sum);
+    lv_obj_add_style(vol_lab, LV_OBJ_PART_MAIN, &st);
+    lv_obj_set_event_cb(vol_lab, lab2_event);
+    lv_obj_align(vol_lab, NULL, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_set_event_cb(page, page_handler);
+
 }
 
+
+
+
+void lv_close_page_(void)
+{
+    /*Create a page*/
+    lv_obj_t * pagec = lv_page_create(lv_scr_act(), NULL);
+    lv_obj_set_size(pagec,320, 240);
+    lv_obj_align(pagec, NULL, LV_ALIGN_CENTER, 0, 0);
+
+    lv_obj_t *_lab = lv_label_create(pagec, NULL);
+    lv_label_set_text_fmt(_lab,"DONE...! \n Sampling Volume %d Litters", atoi(sv_data_));
+    lv_obj_align(_lab, NULL, LV_ALIGN_IN_TOP_MID, 0, 0);
+
+
+    // lv_obj_t *_btn_; lv_obj_t *lab_btn;
+    Create_btn(_btn_, lab_btn, pagec, "Close", 3, 80, 160);
+}
 
 
 

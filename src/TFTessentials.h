@@ -78,6 +78,14 @@ void slider_event_cb(lv_obj_t * slider, lv_event_t event);
 
 void event_handler(lv_obj_t * obj, lv_event_t event);
 
+void page_handler(lv_obj_t * obj, lv_event_t event);
+
+void msg_handler(lv_obj_t * obj, lv_event_t event);
+
+void lv_close_page_(void);
+
 void mainDisplay(void);
+
+void lab2_event(lv_obj_t *obj, lv_event_t event);
 
 #endif
